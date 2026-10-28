@@ -1,0 +1,11 @@
+payment_id,transaction_id,payment_date,currency,amount,payment_status
+P9001,T1001,2026-10-01,USD,120.0,captured
+P9002,T1002,2026-10-01,USD,85.5,captured
+P9003,T1003,2026-10-01,GBP,40.0,captured
+P9004,T1004,2026-10-02,USD,200.0,captured
+P9005,T1005,2026-10-02,EUR,75.25,captured
+P9006,T1006,2026-10-02,USD,60.0,captured
+P9007,T1007,2026-10-03,GBP,99.99,captured
+P9009,T1010,2026-10-04,USD,500.0,captured
+P9010,T9999,2026-10-04,USD,12.0,captured
+P9011,T1011,2026-10-04,GBP,18.75,captured
