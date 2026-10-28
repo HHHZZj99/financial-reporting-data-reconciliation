@@ -6,7 +6,7 @@ A portfolio project demonstrating financial transaction reconciliation, exceptio
 ![SQL](https://img.shields.io/badge/SQL-4479A1?style=flat-square&logo=postgresql&logoColor=white)
 ![dbt](https://img.shields.io/badge/dbt-FF694B?style=flat-square&logo=dbt&logoColor=white)
 ![DuckDB](https://img.shields.io/badge/DuckDB-FFF000?style=flat-square&logo=duckdb&logoColor=black)
-![Tests](https://img.shields.io/badge/tests-Pytest%20%2B%20dbt-success?style=flat-square)
+[![CI](https://github.com/HHHZZj99/financial-reporting-data-reconciliation/actions/workflows/ci.yml/badge.svg)](https://github.com/HHHZZj99/financial-reporting-data-reconciliation/actions/workflows/ci.yml)
 
 ## Business problem
 
