@@ -1,0 +1,13 @@
+transaction_id,transaction_date,account_id,currency,amount,status,payment_ids,payment_count,payment_amount,payment_currency_count,payment_currency,payment_status,invalid_payment_amount,invalid_payment_currency,variance,reconciliation_status
+T1001,2026-10-01,A001,USD,120.0,settled,P9001,1,120.0,1,USD,captured,False,False,0.0,MATCHED
+T1002,2026-10-01,A002,USD,85.5,settled,P9002,1,85.5,1,USD,captured,False,False,0.0,MATCHED
+T1003,2026-10-01,A003,GBP,40.0,settled,P9003,1,40.0,1,GBP,captured,False,False,0.0,MATCHED
+T1004,2026-10-02,A001,USD,210.0,settled,P9004,1,200.0,1,USD,captured,False,False,10.0,AMOUNT_MISMATCH
+T1005,2026-10-02,A004,EUR,75.25,settled,P9005,1,75.25,1,EUR,captured,False,False,0.0,MATCHED
+T1006,2026-10-02,A002,USD,60.0,settled,P9006,1,60.0,1,USD,captured,False,False,0.0,MATCHED
+T1007,2026-10-03,A003,GBP,99.99,settled,P9007,1,99.99,1,GBP,captured,False,False,0.0,MATCHED
+T1008,2026-10-03,A005,USD,150.0,settled,,0,,0,,,,,,MISSING_PAYMENT
+T1009,2026-10-03,A006,EUR,32.5,settled,,0,,0,,,,,,MISSING_PAYMENT
+T1010,2026-10-04,A001,USD,500.0,settled,P9009,1,500.0,1,USD,captured,False,False,0.0,MATCHED
+T1011,2026-10-04,A007,GBP,18.75,settled,P9011,1,18.75,1,GBP,captured,False,False,0.0,MATCHED
+T9999,,,,,,P9010,1,12.0,1,USD,captured,False,False,,ORPHAN_PAYMENT

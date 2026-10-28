@@ -1,0 +1,22 @@
+name: financial_reconciliation
+version: "1.0.0"
+config-version: 2
+profile: financial_reconciliation
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["dbt_tests"]
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  financial_reconciliation:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table
+
+seeds:
+  financial_reconciliation:
+    +quote_columns: false

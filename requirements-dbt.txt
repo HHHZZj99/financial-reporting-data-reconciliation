@@ -1,0 +1,3 @@
+# Separate from the lightweight Python pipeline dependencies.
+# dbt-duckdb supports dbt Core 1.8+ in the v1 adapter line.
+dbt-duckdb>=1.8,<2.0

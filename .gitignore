@@ -1,0 +1,10 @@
+__pycache__/
+.pytest_cache/
+.venv/
+.env
+.DS_Store
+*.duckdb
+*.duckdb.wal
+target/
+dbt_packages/
+logs/

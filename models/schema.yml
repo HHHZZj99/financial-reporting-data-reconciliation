@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  - name: stg_transactions
+    description: Typed and normalised transaction source records; duplicates intentionally remain visible here.
+    columns:
+      - name: transaction_id
+        description: Source transaction key after trimming whitespace.
+      - name: transaction_date
+        description: Parsed business transaction date.
+      - name: amount
+        description: Transaction amount in the original transaction currency.
+
+  - name: stg_payments
+    description: Typed and normalised payment-provider source records.
+    columns:
+      - name: payment_id
+        description: Source payment key after trimming whitespace.
+      - name: transaction_id
+        description: Internal transaction reference supplied by the payment source.
+
+  - name: int_transaction_payment_reconciliation
+    description: Transaction-level full outer reconciliation with payment records aggregated before joining.
+    columns:
+      - name: transaction_id
+        description: One non-empty transaction key per transaction or orphan-payment group.
+        tests:
+          - not_null
+          - unique
+      - name: reconciliation_status
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - MATCHED
+                - MISSING_PAYMENT
+                - ORPHAN_PAYMENT
+                - AMOUNT_MISMATCH
+                - CURRENCY_MISMATCH
+                - INVALID_TRANSACTION_DATE
+                - INVALID_TRANSACTION_AMOUNT
+                - INVALID_PAYMENT_AMOUNT
+
+  - name: int_data_quality_exceptions
+    description: Row-level source quality issues separated from the reconciliation output.
+    columns:
+      - name: source_name
+        tests:
+          - not_null
+      - name: issue_type
+        tests:
+          - not_null
+
+  - name: fct_reconciliation
+    description: Business-facing reconciliation fact model for investigation and reporting.
+    columns:
+      - name: transaction_id
+        tests:
+          - not_null
+          - unique
+      - name: reconciliation_status
+        tests:
+          - not_null
+
+  - name: fct_daily_financial_summary
+    description: Daily transaction and payment totals by transaction date and currency; orphan payments are excluded.
+    columns:
+      - name: transaction_date
+        tests:
+          - not_null
+      - name: currency
+        tests:
+          - not_null

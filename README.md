@@ -1,98 +1,133 @@
 # Financial Reporting & Data Reconciliation
 
-A portfolio project demonstrating a reproducible financial reconciliation pipeline using Python, pandas, SQL, and automated tests. The dataset is synthetic and contains intentionally planted exceptions.
+A portfolio project demonstrating financial transaction reconciliation, exception handling, data-quality checks, and reporting models with **Python, SQL, dbt, and DuckDB**. All data is fictional and contains intentionally planted exceptions.
+
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![SQL](https://img.shields.io/badge/SQL-4479A1?style=flat-square&logo=postgresql&logoColor=white)
+![dbt](https://img.shields.io/badge/dbt-FF694B?style=flat-square&logo=dbt&logoColor=white)
+![DuckDB](https://img.shields.io/badge/DuckDB-FFF000?style=flat-square&logo=duckdb&logoColor=black)
+![Tests](https://img.shields.io/badge/tests-Pytest%20%2B%20dbt-success?style=flat-square)
 
 ## Business problem
 
-Finance teams need to confirm that transactions recorded by an internal system agree with payment-provider records. This project identifies mismatches and produces reporting-ready outputs for investigation.
-
-## Pipeline
-
-1. Load transaction and payment CSV files.
-2. isolate duplicate transaction IDs to a separate exception file.
-3. Aggregate payment rows by transaction ID to avoid join fan-out.
-4. Reconcile transaction and payment records.
-5. Classify missing payments, orphan payments, amount mismatches, and currency mismatches.
-6. Export reconciliation, duplicate, and daily summary reports.
-7. Run automated tests for key reconciliation rules.
+Finance teams need to confirm that internal transaction records agree with payment-provider records. The pipeline identifies unmatched records and differences, isolates data-quality issues, and creates reporting-ready models for investigation.
 
 ## Architecture
 
 ```text
-data/raw/*.csv
-      |
-      v
-Python ingestion + validation
-      |
-      v
-Deduplicate transactions / aggregate payments
-      |
-      v
-Reconciliation rules
-      |
-      +--> reports/reconciliation_report.csv
-      +--> reports/duplicate_transactions.csv
-      +--> reports/daily_financial_summary.csv
-      |
-      v
-pytest automated checks
+                 Fictional CSV inputs
+                  /             \\
+     data/raw/*.csv               seeds/*.csv
+            |                          |
+            v                          v
+   Python reconciliation         dbt seed models
+            |                          |
+            v                          v
+   CSV reports              stg_transactions / stg_payments
+                                       |
+                                       v
+                           int_transaction_payment_reconciliation
+                                       |
+                              +--------+---------+
+                              |                  |
+                              v                  v
+                     fct_reconciliation   fct_daily_financial_summary
+                              |
+                              v
+                  dbt schema + singular tests
 ```
 
-## Quick start
+## Quick start: Python pipeline
 
 Requires Python 3.10+.
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate        # macOS/Linux
-# .venv\Scripts\activate         # Windows
+# .venv\\Scripts\\activate       # Windows PowerShell
 pip install -r requirements.txt
 python src/reconcile.py
-pytest -q
+python -m pytest -q
 ```
 
-## Outputs
+The Python pipeline writes:
 
-- `reports/reconciliation_report.csv` — one row per transaction or orphan payment, with reconciliation status and variance.
-- `reports/duplicate_transactions.csv` — duplicate transaction rows isolated from the main reconciliation.
-- `reports/daily_financial_summary.csv` — daily transaction/payment totals by currency and exception counts.
+- `reports/reconciliation_report.csv` — row-level reconciliation status and amount variance.
+- `reports/data_quality_exceptions.csv` — duplicate transaction IDs and missing source identifiers.
+- `reports/daily_financial_summary.csv` — daily totals split by currency, matched counts, exception counts, and variance.
+
+## Quick start: dbt + DuckDB
+
+DuckDB runs locally and does not require a cloud warehouse account. `dbt-duckdb` is used as a practical local adapter; the SQL models can later be adapted and tested against Snowflake.
+
+```bash
+python -m pip install -r requirements-dbt.txt
+mkdir -p ~/.dbt
+cp profiles.yml.example ~/.dbt/profiles.yml
+# Optional: choose the local DuckDB file location
+export DBT_DUCKDB_PATH="$(pwd)/financial_reconciliation.duckdb"
+dbt debug --project-dir . --profiles-dir ~/.dbt
+dbt build --project-dir . --profiles-dir ~/.dbt
+```
+
+On Windows PowerShell, use `Copy-Item profiles.yml.example $HOME\\.dbt\\profiles.yml` after creating `$HOME\\.dbt`, and set the path with `$env:DBT_DUCKDB_PATH = (Join-Path (Get-Location) 'financial_reconciliation.duckdb')`.
+
+`dbt build` loads the CSV seeds, builds the staging/intermediate/mart models, and runs schema and singular tests. The local database file is ignored by Git.
+
+## dbt model layers
+
+| Layer | Model | Responsibility |
+|---|---|---|
+| Seed | `transactions`, `payments` | Reproducible synthetic input records |
+| Staging | `stg_transactions`, `stg_payments` | Type casting, whitespace trimming, currency normalisation |
+| Intermediate | `int_transaction_payment_reconciliation` | Deduplication, payment aggregation, full outer join, exception classification |
+| Intermediate | `int_data_quality_exceptions` | Duplicate keys, missing IDs/references, invalid amounts |
+| Mart | `fct_reconciliation` | Business-facing transaction/payment match results |
+| Mart | `fct_daily_financial_summary` | Daily totals by currency and exception monitoring |
+
+## Sample findings from the synthetic dataset
+
+The example reports generated by this package use a deliberately small fixture so reviewers can trace each exception back to a source row.
+
+| Check | Result |
+|---|---:|
+| Transaction source rows | 12 |
+| Duplicate transaction rows isolated | 1 |
+| Payment source rows | 10 |
+| Reconciliation output rows | 12 |
+| Matched | 8 |
+| Missing payment | 2 |
+| Amount mismatch | 1 |
+| Orphan payment | 1 |
+
+The amount-mismatch example is transaction `T1004` (USD 210.00 in the transaction source versus USD 200.00 in the payment source). The orphan example is payment `P9010`, which references unknown transaction `T9999`. These are synthetic data points, not client or employer records.
 
 ## Reconciliation statuses
 
 | Status | Meaning |
 |---|---|
 | `MATCHED` | Transaction and payment amounts/currencies agree |
-| `MISSING_PAYMENT` | Transaction exists but no payment record was found |
+| `MISSING_PAYMENT` | Transaction exists but no usable payment record was found |
 | `ORPHAN_PAYMENT` | Payment references a transaction that does not exist |
-| `AMOUNT_MISMATCH` | Transaction and payment amounts differ |
-| `CURRENCY_MISMATCH` | Transaction and payment currencies differ |
+| `AMOUNT_MISMATCH` | Transaction and payment totals differ |
+| `CURRENCY_MISMATCH` | Currencies differ, are missing, or payment rows span multiple currencies |
 | `INVALID_TRANSACTION_DATE` | Transaction date could not be parsed |
 | `INVALID_TRANSACTION_AMOUNT` | Transaction amount is missing or invalid |
+| `INVALID_PAYMENT_AMOUNT` | At least one payment amount for a transaction is missing or invalid |
 
-Duplicate transaction IDs are exported separately and only the first occurrence is retained in the reconciliation run. In a production pipeline, the duplicate policy should be explicitly agreed with Finance before any record is excluded.
+## Design choices
 
-## Data quality and design choices
+- Payments are aggregated before joining to transactions to avoid one-to-many join fan-out.
+- Currency remains a grouping dimension; the project never adds different currencies together.
+- Orphan payments remain visible in row-level reconciliation but are excluded from transaction-date daily totals because they have no valid transaction date.
+- Duplicate transaction IDs are isolated; the first row is retained only for this demo. A real financial control must agree a duplicate-handling policy with Finance before excluding records.
+- Invalid source identifiers are placed in a separate data-quality exception model instead of silently being treated as ordinary transactions.
+- Python and dbt tests cover core business rules, key uniqueness, currency inconsistencies, and reconciliation invariants.
 
-- Currency is retained as a grouping dimension; different currencies are never summed together.
-- Monetary values are rounded to two decimal places for this demo.
-- Payment records are aggregated before joining to avoid accidental row multiplication.
-- Exceptions remain visible instead of being silently discarded.
-- The sample data is fictional and must not be interpreted as real financial information.
+## Automated checks
 
-## SQL examples
+GitHub Actions runs the Python tests and the local dbt build on pushes to `main` and pull requests targeting `main`.
 
-`sql/reconciliation_checks.sql` contains warehouse-oriented SQL checks that can be adapted to Snowflake or another analytical database.
+## Limitations and next steps
 
-## Project roadmap
-
-- [x] Synthetic source data and core reconciliation logic
-- [x] CSV reporting outputs
-- [x] Automated unit tests
-- [x] Warehouse SQL check examples
-- [ ] Add dbt staging and mart models
-- [ ] Add a scheduled orchestration workflow
-- [ ] Add dashboard screenshots and documented sample findings
-
-## Limitations
-
-This is a local portfolio demonstration, not a production financial control. It does not handle FX conversion, partial payments, reversals, settlement timing windows, or approval workflows.
+This is a portfolio demonstration, not a production financial control. It does not implement FX conversion, partial payments, reversals, settlement timing windows, or approval workflows. The next iteration can add Snowflake deployment configuration, orchestration with Airflow, and a dashboard based on the marts.
