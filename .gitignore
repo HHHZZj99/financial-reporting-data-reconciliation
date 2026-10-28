@@ -8,3 +8,20 @@ __pycache__/
 target/
 dbt_packages/
 logs/
+
+# Local Python environment
+.venv/
+__pycache__/
+.pytest_cache/
+
+# Local dbt configuration and database
+profiles.yml
+*.duckdb
+*.duckdb.wal/
+target/
+dbt_packages/
+logs/
+
+# Local backup and macOS files
+*.bak
+.DS_Store

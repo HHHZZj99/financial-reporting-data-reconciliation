@@ -106,6 +106,10 @@ def build_reconciliation(
     result = tx.merge(
         pay_agg, on="transaction_id", how="outer", indicator=True, validate="one_to_one"
     )
+    result["amount"] = pd.to_numeric(result["amount"], errors="coerce").astype("float64")
+    result["payment_amount"] = pd.to_numeric(
+        result["payment_amount"], errors="coerce"
+    ).astype("float64")
     result["variance"] = (result["amount"] - result["payment_amount"]).round(2)
     result["reconciliation_status"] = "MATCHED"
     result.loc[result["_merge"].eq("left_only"), "reconciliation_status"] = "MISSING_PAYMENT"
@@ -117,11 +121,11 @@ def build_reconciliation(
     result.loc[
         both & result["variance"].abs().gt(0.009), "reconciliation_status"
     ] = "AMOUNT_MISMATCH"
-    invalid_currency_flags = result["invalid_payment_currency"].map(
-        lambda value: bool(value) if pd.notna(value) else False
+    invalid_currency_flags = (
+        result["invalid_payment_currency"].fillna(False).astype(bool)
     )
-    invalid_amount_flags = result["invalid_payment_amount"].map(
-        lambda value: bool(value) if pd.notna(value) else False
+    invalid_amount_flags = (
+        result["invalid_payment_amount"].fillna(False).astype(bool)
     )
     currency_problem = (
         result["payment_currency_count"].fillna(0).gt(1)
